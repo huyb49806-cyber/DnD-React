@@ -1,6 +1,7 @@
 import React, { useState, useEffect,useRef } from 'react'
 import { motion, spring } from 'framer-motion'
 import './App.css'
+import Item from './components/Item';
 
 const initialMovies = [
   { id: 1, text: 'Avatar' },
@@ -17,6 +18,9 @@ export default function App() {
   const [movies, setMovies] = useState(initialMovies);
   const [draggingItemInfo, setDraggingItemInfo] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [editingId,setEditingId]=useState(null);
+  const [editingText,setEdittingText]=useState('');
+
   const containerRef=useRef(null);
   const draggingItemInfoRef=useRef(null);
   draggingItemInfoRef.current=draggingItemInfo;
@@ -68,7 +72,7 @@ export default function App() {
       lock.current=true;
       setTimeout(()=>{
         lock.current=false;
-      },100);
+      },150);
     }
     const handleMouseUp=()=>{
       setDraggingItemInfo(null);
@@ -83,12 +87,31 @@ export default function App() {
     }
   },[draggingItemInfo]);
 
+  const handleSubmit=(id)=>{
+    if(editingText.trim()==='') return;
+    const newMovies=movies.map((movie)=>movie.id===id?{...movie,text:editingText}:movie);
+    setMovies(newMovies);
+    setEditingId(null);
+  }
+
+  const handleKeyDown=(e,id)=>{
+    if(e.key==='Enter') handleSubmit(id);
+    else if(e.key==='Escape'){
+      setEditingId(null);
+    }
+  }
+
+  const handleDoubleClick=(movie)=>{
+    setEditingId(movie.id);
+    setEdittingText(movie.text);
+  }
 
   return (
     <>
       <div className="container" ref={containerRef}>
         {movies.map((movie) => {
           const isDragging=draggingItemInfo?.id===movie.id;
+          const isEditing=editingId===movie.id;
           return (
             // <>
               <motion.div
@@ -103,7 +126,24 @@ export default function App() {
                 data-id={movie.id}
                 transition={{type:"spring",stiffness:400,damping:50}}
               >
-                {movie.text}
+                {isEditing?(
+                  <input
+                    autoFocus
+                    type='text'
+                    value={editingText}
+                    onChange={(e)=>setEdittingText(e.target.value)}
+                    onBlur={()=>handleSubmit(movie.id)}
+                    onKeyDown={(e)=>handleKeyDown(e,movie.id)}
+                  >
+                  </input>
+                ):(
+                  <span
+                    onDoubleClick={()=>handleDoubleClick(movie)}
+                    onMouseDown={(e)=>e.stopPropagation()}
+                  >
+                    {movie.text}
+                  </span>
+                )}
               </motion.div>
             // </>
           )
