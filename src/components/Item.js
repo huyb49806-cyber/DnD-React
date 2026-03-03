@@ -1,6 +1,6 @@
 import React, { useState, forwardRef } from 'react'
 
-const Item=forwardRef(({ isDragging, movie, onMouseDown, handleSubmit }, ref)=> {
+const Item=({ isDragging, movie, onMouseDown, handleSubmit })=> {
     console.log(2);
     const [isEditing, setIsEditing] = useState(false);
     const [editingText, setEdittingText] = useState('');
@@ -27,7 +27,6 @@ const Item=forwardRef(({ isDragging, movie, onMouseDown, handleSubmit }, ref)=> 
     return (
         <>
             <div
-                ref={ref}
                 className={
                     `flex-item 
                   item
@@ -63,6 +62,6 @@ const Item=forwardRef(({ isDragging, movie, onMouseDown, handleSubmit }, ref)=> 
             </div>
         </>
     )
-})
+}
 
 export default React.memo(Item);

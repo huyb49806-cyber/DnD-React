@@ -21,23 +21,14 @@ export default function MoviesList() {
     const draggingInfoRef = useRef(null);
     const draggingItemRef=useRef(null);
     const containerRef = useRef(null);
-    const itemsRef=useRef(new Map());
     const setPos = (e) => {
         const draggingItemRect=draggingItemRef.current;
         draggingItemRect.style.left = e.clientX - draggingInfoRef.current.shiftX+'px';
         draggingItemRect.style.top = e.clientY - draggingInfoRef.current.shiftY+'px';
     }
 
-    const setItemsRef=useCallback((elm, id)=>{
-        if(elm) itemsRef.current.set(id,elm);
-        else itemsRef.current.delete(id);
-    },[itemsRef])
-
-    // useEffect(()=>{
-    //     console.log(itemsRef);
-    // },[]);
-
     const handleMouseMove = useRef( (e) => {
+        
         if (!draggingInfoRef.current) return;
         setPos(e);
         const containerRect = containerRef.current.getBoundingClientRect();
@@ -64,7 +55,10 @@ export default function MoviesList() {
         }
         draggingInfoRef.current.currentIdOrder=currentIdOrder;
         draggingInfoRef.current.prevIdOrder=prevIdOrder;
-        itemsRef.current.forEach((domNode,key, arr)=>{      //key laf id
+
+        const domNodes=Array.from(containerRef.current.children);
+        domNodes.forEach((domNode)=>{      //key laf id
+            const key=Number(domNode.getAttribute('data-id'));
             if(key===draggingInfoRef.current.id) return;
             const originalIdx=originalIdOrder.indexOf(key);
             const prevIdx=prevIdOrder.indexOf(key);
@@ -90,7 +84,9 @@ export default function MoviesList() {
         setDragging(false);
         document.removeEventListener('mousemove', handleMouseMove.current);
         document.removeEventListener('mouseup', handleMouseUp.current);
-        itemsRef.current.forEach(domNode=>{
+
+        const domNodes = Array.from(containerRef.current.children);
+        domNodes.forEach(domNode=>{
             domNode.style.transform='';
             domNode.style.transition='none';
             domNode.style.transition='';
@@ -104,12 +100,14 @@ export default function MoviesList() {
     })
 
     const handleMouseDown = useCallback((e, movie) => {
+        console.log(5);
         setDragging(true);
         const target = e.currentTarget;
         const rect = target.getBoundingClientRect();
         const originalIdOrder=movies.map(movie=>movie.id);
         const moviesRect=originalIdOrder.map(id=>{
-            return itemsRef.current.get(id).getBoundingClientRect();
+            const node=containerRef.current.querySelector(`[data-id="${id}"]`);
+            return node.getBoundingClientRect();
         })
         draggingInfoRef.current = {
             id: movie.id,
@@ -147,7 +145,6 @@ export default function MoviesList() {
                     const isDragging = draggingInfoRef.current?.id === movie.id;
                     return (
                         <Item
-                            ref={(elm)=>setItemsRef(elm,movie.id)}
                             key={movie.id}
                             isDragging={isDragging}
                             movie={movie}
