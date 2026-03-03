@@ -15,6 +15,7 @@
   border-radius: 8px;
   user-select: none;
   font-size: 18px;
+  transition: transform 0.2s cubic-bezier(0.2, 0,0 ,1)
 }
 
 .placeholder{
@@ -26,4 +27,7 @@
   position: fixed;
   pointer-events: none;
   opacity: 0.7;
+  transition: none;
 }
+
+
