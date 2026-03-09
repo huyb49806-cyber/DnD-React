@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import "../App.css";
 import Item from "./Item";
 
@@ -16,99 +16,104 @@ const initialMovies = [
 export default function MoviesList() {
     console.log(1);
     const [movies, setMovies] = useState(initialMovies);
-    const [dragging,setDragging]=useState(false);
+    const [dragging, setDragging] = useState(false);
 
     const draggingInfoRef = useRef(null);
-    const draggingItemRef=useRef(null);
+    const draggingItemRef = useRef(null);
     const containerRef = useRef(null);
     const setPos = (e) => {
-        const draggingItemRect=draggingItemRef.current;
-        draggingItemRect.style.left = e.clientX - draggingInfoRef.current.shiftX+'px';
-        draggingItemRect.style.top = e.clientY - draggingInfoRef.current.shiftY+'px';
+        const draggingItemRect = draggingItemRef.current;
+        draggingItemRect.style.left = e.clientX - draggingInfoRef.current.shiftX + 'px';
+        draggingItemRect.style.top = e.clientY - draggingInfoRef.current.shiftY + 'px';
     }
 
-    const handleMouseMove = useRef( (e) => {
-        
+    const handleMouseMove = useRef((e) => {
         if (!draggingInfoRef.current) return;
         setPos(e);
         const containerRect = containerRef.current.getBoundingClientRect();
         const isOut = e.clientX < containerRect.left || e.clientX > containerRect.right || e.clientY < containerRect.top || e.clientY > containerRect.bottom;
-        let {currentIdOrder, prevIdOrder,originalIdOrder, moviesRect}=draggingInfoRef.current;
+        let { currentIdOrder, prevIdOrder, originalIdOrder, moviesRect } = draggingInfoRef.current;
         if (isOut) {
-            currentIdOrder=[...originalIdOrder];
+            currentIdOrder = [...originalIdOrder];
         }
-        const elementBelow = document.elementFromPoint(e.clientX, e.clientY);
-        const targetBelow = elementBelow?.closest('.flex-item');
-        if (targetBelow) {
-            prevIdOrder=[...currentIdOrder];
-            const targetId = Number(targetBelow.getAttribute('data-id'));//getAttri tra ve string
+        const domNodes = Array.from(containerRef.current.children);
+        const impactIdx = moviesRect.findIndex((elm, index, array) => {
+            return (e.clientX > elm.left && e.clientX < elm.right && e.clientY > elm.top && e.clientY < elm.bottom)
+        })
+
+        if (impactIdx!==-1) {
+            prevIdOrder = [...currentIdOrder];
+            const targetId = currentIdOrder[impactIdx];
             const draggingItemId = draggingInfoRef.current.id;
             if (targetId !== draggingItemId) {
                 console.log(3);
-                const newIdOrder=[...currentIdOrder];
-                const targetMovieIdx=newIdOrder.findIndex(id=>id===targetId);
-                const draggingMovieIdx=newIdOrder.findIndex(id=>id===draggingInfoRef.current.id);
-                const deletedIdMovie=newIdOrder.splice(draggingMovieIdx,1)[0];
-                newIdOrder.splice(targetMovieIdx,0,deletedIdMovie);
-                currentIdOrder=newIdOrder;
+                const newIdOrder = [...currentIdOrder];
+                const targetMovieIdx = newIdOrder.findIndex(id => id === targetId);
+                const draggingMovieIdx = newIdOrder.findIndex(id => id === draggingInfoRef.current.id);
+                const deletedIdMovie = newIdOrder.splice(draggingMovieIdx, 1)[0];
+                newIdOrder.splice(targetMovieIdx, 0, deletedIdMovie);
+                currentIdOrder = newIdOrder;
+
             }
         }
-        draggingInfoRef.current.currentIdOrder=currentIdOrder;
-        draggingInfoRef.current.prevIdOrder=prevIdOrder;
+        draggingInfoRef.current.currentIdOrder = currentIdOrder;
+        draggingInfoRef.current.prevIdOrder = prevIdOrder;
+        
+        domNodes.forEach((domNode) => {
+            const key = Number(domNode.getAttribute('data-id'));
+            if (key === draggingInfoRef.current.id) return;
+            const originalIdx = originalIdOrder.indexOf(key);
+            const currentIdx = currentIdOrder.indexOf(key);
+            if (originalIdx !== currentIdx) {
+                const originalRect = moviesRect[originalIdx];
+                const currentRect = moviesRect[currentIdx];
+                const dx = currentRect.left - originalRect.left;
+                const dy = currentRect.top - originalRect.top;
+                domNode.style.transform = `translate(${dx}px,${dy}px)`;
 
-        const domNodes=Array.from(containerRef.current.children);
-        domNodes.forEach((domNode)=>{      //key laf id
-            const key=Number(domNode.getAttribute('data-id'));
-            if(key===draggingInfoRef.current.id) return;
-            const originalIdx=originalIdOrder.indexOf(key);
-            const prevIdx=prevIdOrder.indexOf(key);
-            const currentIdx=currentIdOrder.indexOf(key);
-            if(originalIdx!==currentIdx){
-                const prevRect=moviesRect[prevIdx];
-                const currentRect=moviesRect[currentIdx];
-                const dx=currentRect.left-prevRect.left;
-                const dy=currentRect.top-prevRect.top;
-                domNode.style.transform=`translate(${dx}px,${dy}px)`;
             }
-            else{
-                domNode.style.transform=``;
+            else {
+                domNode.style.transform = ``;
             }
         })
     })
 
     const handleMouseUp = useRef(() => {
-        const {currentIdOrder,prevIdOrder,originalIdOrder}=draggingInfoRef.current;
-        const isChange1=originalIdOrder.some((id,idx)=>id!==currentIdOrder[idx]);
-        const isChange2=prevIdOrder.some((id,idx)=>id!==currentIdOrder[idx]);
+        console.log("handleMouseUp");
+        const { currentIdOrder, prevIdOrder, originalIdOrder } = draggingInfoRef.current;
+        const isChange1 = originalIdOrder.some((id, idx) => id !== currentIdOrder[idx]);
+        const isChange2 = prevIdOrder.some((id, idx) => id !== currentIdOrder[idx]);
         draggingInfoRef.current = null;
         setDragging(false);
         document.removeEventListener('mousemove', handleMouseMove.current);
         document.removeEventListener('mouseup', handleMouseUp.current);
 
         const domNodes = Array.from(containerRef.current.children);
-        domNodes.forEach(domNode=>{
-            domNode.style.transform='';
-            domNode.style.transition='none';
-            domNode.style.transition='';
+        domNodes.forEach(domNode => {
+            domNode.style.transform = '';
+            domNode.style.transition = 'none';
+            domNode.style.transition = '';
         })
-        if(isChange1&&isChange2){
-            setMovies(prev=>{
-                const currentOrder=new Map(currentIdOrder.map((id,idx)=>[id,idx]));
-                return [...prev].sort((a,b)=>currentOrder.get(a.id)-currentOrder.get(b.id));
+        if (isChange1 && isChange2) {
+            setMovies(prev => {
+                const currentOrder = new Map(currentIdOrder.map((id, idx) => [id, idx]));
+                return [...prev].sort((a, b) => currentOrder.get(a.id) - currentOrder.get(b.id));
             })
         }
     })
 
+
     const handleMouseDown = useCallback((e, movie) => {
-        console.log(5);
+        console.log("handleMouseDown");
         setDragging(true);
         const target = e.currentTarget;
         const rect = target.getBoundingClientRect();
-        const originalIdOrder=movies.map(movie=>movie.id);
-        const moviesRect=originalIdOrder.map(id=>{
-            const node=containerRef.current.querySelector(`[data-id="${id}"]`);
+        const originalIdOrder = movies.map(movie => movie.id);
+        const moviesRect = originalIdOrder.map(id => {
+            const node = containerRef.current.querySelector(`[data-id="${id}"]`);
             return node.getBoundingClientRect();
         })
+        // console.log(moviesRect);
         draggingInfoRef.current = {
             id: movie.id,
             shiftX: e.clientX - rect.left,
@@ -116,27 +121,27 @@ export default function MoviesList() {
             width: rect.width,
             height: rect.height,
             originalIdOrder,
-            prevIdOrder:[...originalIdOrder],
-            currentIdOrder:[...originalIdOrder],
+            prevIdOrder: [...originalIdOrder],
+            currentIdOrder: [...originalIdOrder],
             moviesRect
         }
         //cách 1: do setState chạy trước macrotask
-        setTimeout(()=>{
-            const draggingItemRect=draggingItemRef.current;
-            draggingItemRect.style.width = draggingInfoRef.current.width+'px';
-            draggingItemRect.style.height = draggingInfoRef.current.height+'px';
+        setTimeout(() => {
+            const draggingItemRect = draggingItemRef.current;
+            draggingItemRect.style.width = draggingInfoRef.current.width + 'px';
+            draggingItemRect.style.height = draggingInfoRef.current.height + 'px';
             setPos(e);
-        },0);
+        }, 0);
         //cách 2: đẩy đoạn này ra ngoài dùng useEffect
 
         document.addEventListener('mousemove', handleMouseMove.current);
         document.addEventListener('mouseup', handleMouseUp.current)
-    },[]);
+    }, []);
 
-    const handleSubmit = useCallback((id,editingText) => {
+    const handleSubmit = useCallback((id, editingText) => {
         if (editingText.trim() === '') return;
-        setMovies(prev=>prev.map((movie) => movie.id === id ? { ...movie, text: editingText } : movie));
-    },[])
+        setMovies(prev => prev.map((movie) => movie.id === id ? { ...movie, text: editingText } : movie));
+    }, [])
 
     return (
         <>

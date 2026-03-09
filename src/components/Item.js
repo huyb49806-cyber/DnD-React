@@ -1,6 +1,6 @@
 import React, { useState, forwardRef } from 'react'
 
-const Item=({ isDragging, movie, onMouseDown, handleSubmit })=> {
+const Item=({ isDragging, movie, onMouseDown, handleSubmit,onMouseOver })=> {
     console.log(2);
     const [isEditing, setIsEditing] = useState(false);
     const [editingText, setEdittingText] = useState('');
@@ -23,6 +23,7 @@ const Item=({ isDragging, movie, onMouseDown, handleSubmit })=> {
         }
     }
 
+    
 
     return (
         <>
@@ -32,6 +33,7 @@ const Item=({ isDragging, movie, onMouseDown, handleSubmit })=> {
                   item
                   ${isDragging ? "placeholder" : ""}`
                 }
+                onMouseOver={onMouseOver}
                 onMouseDown={(e) => onMouseDown(e, movie)}
                 data-id={movie.id}
             >
