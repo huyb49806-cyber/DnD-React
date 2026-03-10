@@ -1,6 +1,7 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import "../App.css";
 import Item from "./Item";
+import { flushSync } from 'react-dom';
 
 const initialMovies = [
     { id: 100, text: 'Avatar' },
@@ -41,7 +42,7 @@ export default function MoviesList() {
             return (e.clientX > elm.left && e.clientX < elm.right && e.clientY > elm.top && e.clientY < elm.bottom)
         })
 
-        if (impactIdx!==-1) {
+        if (impactIdx !== -1) {
             prevIdOrder = [...currentIdOrder];
             const targetId = currentIdOrder[impactIdx];
             const draggingItemId = draggingInfoRef.current.id;
@@ -58,7 +59,7 @@ export default function MoviesList() {
         }
         draggingInfoRef.current.currentIdOrder = currentIdOrder;
         draggingInfoRef.current.prevIdOrder = prevIdOrder;
-        
+
         domNodes.forEach((domNode) => {
             const key = Number(domNode.getAttribute('data-id'));
             if (key === draggingInfoRef.current.id) return;
@@ -80,35 +81,42 @@ export default function MoviesList() {
 
     const handleMouseUp = useRef(() => {
         console.log("handleMouseUp");
-        const { currentIdOrder, prevIdOrder, originalIdOrder } = draggingInfoRef.current;
+        const { currentIdOrder, originalIdOrder } = draggingInfoRef.current;
+        console.log("currentIdOrder: ", currentIdOrder);
         const isChange1 = originalIdOrder.some((id, idx) => id !== currentIdOrder[idx]);
-        const isChange2 = prevIdOrder.some((id, idx) => id !== currentIdOrder[idx]);
+        // const isChange2 = prevIdOrder.some((id, idx) => id !== currentIdOrder[idx]);
         draggingInfoRef.current = null;
         setDragging(false);
         document.removeEventListener('mousemove', handleMouseMove.current);
         document.removeEventListener('mouseup', handleMouseUp.current);
-
-        const domNodes = Array.from(containerRef.current.children);
-        domNodes.forEach(domNode => {
-            domNode.style.transform = '';
-            domNode.style.transition = 'none';
-            domNode.style.transition = '';
-        })
-        if (isChange1 && isChange2) {
-            setMovies(prev => {
-                const currentOrder = new Map(currentIdOrder.map((id, idx) => [id, idx]));
-                return [...prev].sort((a, b) => currentOrder.get(a.id) - currentOrder.get(b.id));
+        if (isChange1) {
+            flushSync(()=>{
+                setMovies(prev => {
+                    const currentOrder = new Map(currentIdOrder.map((id, idx) => [id, idx]));
+                    return [...prev].sort((a, b) => currentOrder.get(a.id) - currentOrder.get(b.id));
+                })
             })
         }
+        const domNodes=Array.from(containerRef.current.children);
+        domNodes.forEach((domNode)=>{
+            domNode.style.transform='';
+            domNode.style.transition='none';
+            void domNode.offsetHeight;
+            domNode.style.transition='';
+        })
     })
 
+    useEffect(() => {
+        console.log("movies: ", movies);
+    }, [movies])
 
     const handleMouseDown = useCallback((e, movie) => {
         console.log("handleMouseDown");
         setDragging(true);
         const target = e.currentTarget;
         const rect = target.getBoundingClientRect();
-        const originalIdOrder = movies.map(movie => movie.id);
+        const originalNodes=Array.from(containerRef.current.children)
+        const originalIdOrder =originalNodes.map(node=> Number(node.getAttribute('data-id')));
         const moviesRect = originalIdOrder.map(id => {
             const node = containerRef.current.querySelector(`[data-id="${id}"]`);
             return node.getBoundingClientRect();
